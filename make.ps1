@@ -41,4 +41,7 @@ $manifest | Out-File -Encoding ascii -FilePath "$directory/manifest.json"
 mkdir "$directory/assets"
 copy "./assets/pandora_64x64.png" "$directory/assets"
 copy "./assets/pandora_128x128.png" "$directory/assets"
-zip pandora_media_session.zip "$directory/*"
+cd $directory
+zip pandora_media_session.zip "*"
+mv .\pandora_media_session.zip ..
+cd ..
