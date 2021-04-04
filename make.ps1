@@ -41,7 +41,9 @@ $manifest | Out-File -Encoding ascii -FilePath "$directory/manifest.json"
 mkdir "$directory/assets"
 copy "./assets/pandora_64x64.png" "$directory/assets"
 copy "./assets/pandora_128x128.png" "$directory/assets"
+Remove-Item -Force "$directory/README.md" -ErrorAction SilentlyContinue
 cd $directory
-zip pandora_media_session.zip "*"
+zip -r pandora_media_session.zip "*"
 mv .\pandora_media_session.zip ..
 cd ..
+Remove-Item -Force pandora_media_session -Recurse -ErrorAction SilentlyContinue
