@@ -89,7 +89,7 @@ function Create-Manifest-V2 ($ScriptDetails, $AdditionalProperties) {
     },
     "permissions": [
         "*://*.pandora.com/*"
-    ],
+    ]
 }
 
 "@
