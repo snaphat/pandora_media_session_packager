@@ -13,7 +13,7 @@ $version = ($script | Select-String -pattern "@version +([A-z0-9 ].*)").Matches.
 
 $manifest = "{
     `"author`": `"$author`",
-    `"manifest_version`": 2,
+    `"manifest_version`": 3,
     `"name`": `"$name`",
     `"version`": `"$version`",
     `"description`": `"$description`",
@@ -29,11 +29,11 @@ $manifest = "{
         `"64`": `"assets/pandora_64x64.png`",
         `"128`": `"assets/pandora_128x128.png`"
     },
-        `"browser_action`": {
+        `"action`": {
         `"default_title`": `"$name`",
         `"default_icon`": `"assets/pandora_64x64.png`"
     },
-        `"permissions`": [
+        `"host_permissions`": [
         `"*://*.pandora.com/*`"
     ]
 }"
