@@ -98,23 +98,25 @@ function Create-Package ($PackageDirectory, $ManifestContent) {
     Copy-Item "./assets/pandora_64x64.png" -Destination $AssetsDirectory
     Copy-Item "./assets/pandora_128x128.png" -Destination $AssetsDirectory
 
-    Get-ChildItem "$ScriptDirectory" -Exclude README.md | Copy-Item -Destination $PackageDirectory -Recurse -Force
+    Get-ChildItem "$ScriptDirectory" -Exclude README.md, .gitignore | Copy-Item -Destination $PackageDirectory -Recurse -Force
 
     $ManifestContent | Out-File -NoNewline -Encoding ascii -FilePath "$PackageDirectory/manifest.json"
 
     $ZipFileName = (Split-Path -Path $PackageDirectory -Leaf) + ".zip"
-    Compress-Archive -Path "$PackageDirectory/*" -DestinationPath "$ZipFileName" -Force
+
+     # The Compress-Archive cmdlet cannot be used because the Firefox validator doesn't work with its archives.
+    7z a -mfb=258 -mpass=15 -r $ZipFileName $PackageDirectory/*
 }
 
 # Firefox specific additional properties for the manifest
 $FirefoxAdditionalProperties = '
     "browser_specific_settings": {
         "gecko": {
-            "id": "{d6d93eb4-66e7-43df-bf7a-3500f9a35e26}",
+            "id": "{88227840-b7a6-44cc-a310-e0c1f928a89b}",
             "strict_min_version": "109.0"
         }
     }
-}'
+'
 
 # Clean up and prepare for new package creation
 Remove-Item -Force pandora_media_session* -Recurse -ErrorAction SilentlyContinue
