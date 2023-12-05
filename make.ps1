@@ -103,7 +103,7 @@ function Create-Package ($PackageDirectory, $ManifestContent) {
     $ManifestContent | Out-File -NoNewline -Encoding ascii -FilePath "$PackageDirectory/manifest.json"
 
     $ZipFileName = (Split-Path -Path $PackageDirectory -Leaf) + ".zip"
-    Compress-Archive -Path "$PackageDirectory/*" -DestinationPath "..\$ZipFileName" -Force
+    Compress-Archive -Path "$PackageDirectory/*" -DestinationPath "$ZipFileName" -Force
 }
 
 # Firefox specific additional properties for the manifest
