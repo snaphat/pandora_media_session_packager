@@ -1,49 +1,20 @@
 <#
 .SYNOPSIS
-    Extracts script details from a user script file.
-
-.DESCRIPTION
-    Reads a specified script file and extracts metadata such as author, description, name, and version.
-
-.PARAMETER ScriptPath
-    Path to the user script file.
-
-.OUTPUTS
-    Hashtable containing script details: Author, Description, Name, Version.
-
-.EXAMPLE
-    $Details = Get-ScriptDetails -ScriptPath "path/to/script.js"
-#>
-function Get-ScriptDetails ($ScriptPath) {
-    $ScriptContent = Get-Content $ScriptPath
-    $ScriptDetails = @{}
-    $ScriptDetails.Author = ($ScriptContent | Select-String -Pattern "@author +([A-z0-9 ].*)").Matches.Groups[1].Value
-    $ScriptDetails.Description = ($ScriptContent | Select-String -Pattern "@description +([A-z0-9 ].*)").Matches.Groups[1].Value
-    $ScriptDetails.Name = ($ScriptContent | Select-String -Pattern "@name +([A-z0-9 ].*)").Matches.Groups[1].Value
-    $ScriptDetails.Version = ($ScriptContent | Select-String -Pattern "@version +([A-z0-9 ].*)").Matches.Groups[1].Value
-    return $ScriptDetails
-}
-
-<#
-.SYNOPSIS
     Creates a manifest string for a web extension.
 
 .DESCRIPTION
-    Generates a manifest file content for a web extension, adding additional properties if provided (useful for browser-specific settings).
+    Generates a manifest file content for a web extension.
 
 .PARAMETER ScriptDetails
     Hashtable containing script details: Author, Description, Name, Version.
-
-.PARAMETER AdditionalProperties
-    String containing additional properties to be included in the manifest, such as browser-specific settings.
 
 .OUTPUTS
     String representing the content of the manifest file.
 
 .EXAMPLE
-    $Manifest = Create-Manifest -ScriptDetails $Details -AdditionalProperties $FirefoxProperties
+    $Manifest = Create-Manifest -ScriptDetails $Details
 #>
-function Create-Manifest ($ScriptDetails, $AdditionalProperties) {
+function Create-Manifest-V3 ($ScriptDetails) {
     $Manifest = @"
 {
     "author": "$($ScriptDetails.Author)",
@@ -69,10 +40,86 @@ function Create-Manifest ($ScriptDetails, $AdditionalProperties) {
     },
     "host_permissions": [
         "*://*.pandora.com/*"
-    ]$(if ($AdditionalProperties) { ",$AdditionalProperties" })
+    ]
 }
+
 "@
     return $Manifest
+}
+
+<#
+.SYNOPSIS
+    Creates a manifest v2 string for a web extension.
+
+.DESCRIPTION
+    Generates a manifest file content for a web extension.
+
+.PARAMETER ScriptDetails
+    Hashtable containing script details: Author, Description, Name, Version.
+
+.OUTPUTS
+    String representing the content of the manifest file.
+
+.EXAMPLE
+    $Manifest = Create-Manifest-V2 -ScriptDetails $Details
+#>
+function Create-Manifest-V2 ($ScriptDetails, $AdditionalProperties) {
+    $Manifest = @"
+{
+    "author": "$($ScriptDetails.Author)",
+    "manifest_version": 2,
+    "name": "$($ScriptDetails.Name)",
+    "version": "$($ScriptDetails.Version)",
+    "description": "$($ScriptDetails.Description)",
+    "minimum_chrome_version": "87.0.0.0",
+    "content_scripts": [
+        {
+            "matches": ["*://*.pandora.com/*"],
+            "js": ["pandora_media_session.user.js"],
+            "run_at": "document_start"
+        }
+    ],
+    "icons": {
+        "64": "assets/pandora_64x64.png",
+        "128": "assets/pandora_128x128.png"
+    },
+    "browser_action": {
+        "default_title": "$($ScriptDetails.Name)",
+        "default_icon": "assets/pandora_64x64.png"
+    },
+    "permissions": [
+        "*://*.pandora.com/*"
+    ],
+}
+
+"@
+    return $Manifest
+}
+
+<#
+.SYNOPSIS
+    Extracts script details from a user script file.
+
+.DESCRIPTION
+    Reads a specified script file and extracts metadata such as author, description, name, and version.
+
+.PARAMETER ScriptPath
+    Path to the user script file.
+
+.OUTPUTS
+    Hashtable containing script details: Author, Description, Name, Version.
+
+.EXAMPLE
+    $Details = Get-ScriptDetails -ScriptPath "path/to/script.js"
+#>
+function Get-ScriptDetails ($ScriptPath) {
+    $ScriptContent = Get-Content $ScriptPath
+    $ScriptDetails = @{}
+    $ScriptDetails.Author = ($ScriptContent | Select-String -Pattern "@author +([A-z0-9 ].*)").Matches.Groups[1].Value
+    $ScriptDetails.Description = ($ScriptContent | Select-String -Pattern "@description +([A-z0-9 ].*)").Matches.Groups[1].Value
+    $ScriptDetails.Name = ($ScriptContent | Select-String -Pattern "@name +([A-z0-9 ].*)").Matches.Groups[1].Value
+    $ScriptDetails.Version = ($ScriptContent | Select-String -Pattern "@version +([A-z0-9 ].*)").Matches.Groups[1].Value
+    return $ScriptDetails
 }
 
 <#
@@ -108,16 +155,6 @@ function Create-Package ($PackageDirectory, $ManifestContent) {
     7z a -mfb=258 -mpass=15 -r $ZipFileName $PackageDirectory/*
 }
 
-# Firefox specific additional properties for the manifest
-$FirefoxAdditionalProperties = '
-    "browser_specific_settings": {
-        "gecko": {
-            "id": "{88227840-b7a6-44cc-a310-e0c1f928a89b}",
-            "strict_min_version": "109.0"
-        }
-    }
-'
-
 # Clean up and prepare for new package creation
 Remove-Item -Force pandora_media_session* -Recurse -ErrorAction SilentlyContinue
 git clone git@github.com:snaphat/pandora_media_session.git
@@ -125,12 +162,14 @@ $ScriptDirectory = "$(Get-Location)/pandora_media_session"
 $ScriptPath = "$ScriptDirectory/pandora_media_session.user.js"
 $ScriptDetails = Get-ScriptDetails -ScriptPath $ScriptPath
 
-# Create and package the Chrome extension
-$ChromePackageDirectory = $ScriptDirectory + "_chrome"
-$ChromeManifest = Create-Manifest $ScriptDetails
-Create-Package $ChromePackageDirectory $ChromeManifest
+# Create manifest contents
+$ManifestV2 = Create-Manifest-V2 $ScriptDetails
+$ManifestV3 = Create-Manifest-V3 $ScriptDetails
 
-# Create and package the Firefox extension
-$FirefoxPackageDirectory = $ScriptDirectory + "_firefox"
-$FirefoxManifest = Create-Manifest $ScriptDetails $FirefoxAdditionalProperties
-Create-Package $FirefoxPackageDirectory $FirefoxManifest
+# Setup package directories
+$PackageDirectoryV2 = $ScriptDirectory + "_package_v2"
+$PackageDirectoryV3 = $ScriptDirectory + "_package_v3"
+
+# Create and package the extension
+Create-Package $PackageDirectoryV2 $ManifestV2
+Create-Package $PackageDirectoryV3 $ManifestV3
