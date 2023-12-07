@@ -167,8 +167,8 @@ $ManifestV2 = Create-Manifest-V2 $ScriptDetails
 $ManifestV3 = Create-Manifest-V3 $ScriptDetails
 
 # Setup package directories
-$PackageDirectoryV2 = $ScriptDirectory + "_package_v2"
-$PackageDirectoryV3 = $ScriptDirectory + "_package_v3"
+$PackageDirectoryV2 = $ScriptDirectory + "_package_manifest_v2"
+$PackageDirectoryV3 = $ScriptDirectory + "_package_manifest_v3"
 
 # Create and package the extension
 Create-Package $PackageDirectoryV2 $ManifestV2
